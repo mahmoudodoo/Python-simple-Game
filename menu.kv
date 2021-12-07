@@ -1,3 +1,4 @@
+#:import utils kivy.utils
 
 
 # Designing The menu
@@ -9,10 +10,16 @@
 		Rectangle:
 			size: self.size
 	Label:
-		text: "TITLE"
+	    font_size: dp(59)
+	    font_name: 'fonts/Sackers-Gothic-Std-Light.ttf'
+		text: root.parent.menu_title
 		pos_hint: {"center_x": .5, "center_y": .6 }
 	Button:
-		text: "START"
-		pos_hint: {"center_x": .5, "center_y": .4 }
+        font_size: dp(28)
+        font_name: 'fonts/Eurostile.ttf'
+		text: root.parent.menu_btn_title
+		pos_hint: {"center_x": .5, "center_y": .3 }
 		size_hint: .2 , .1
 		on_press: root.parent.on_menu_button_pressed()
+		background_normal: ''
+		background_color: utils.get_color_from_hex('#5E0FF3')

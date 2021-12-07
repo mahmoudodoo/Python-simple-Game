@@ -1,11 +1,13 @@
 from kivy.config import Config
+from kivy.core.audio import SoundLoader  
+
 Config.set('graphics', 'width', '900')
 Config.set('graphics', 'height', '400')
 
 
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.properties import NumericProperty, ObjectProperty
+from kivy.properties import NumericProperty, ObjectProperty, StringProperty
 from kivy.graphics.context_instructions import Color
 from kivy.graphics.vertex_instructions import Line,Quad,Triangle
 from kivy.properties import NumericProperty, Clock
@@ -15,12 +17,12 @@ import random
 from kivy.lang import Builder
 from kivy.uix.relativelayout import RelativeLayout
 
-""" Python Simple Game Starting and Restarting"""
+""" Python Simple Game Final Result with audio"""
 
-# import Builder and load menu.kv then add it to simplegame.kv   
-Builder.load_file("menu.kv")   
+# import Builder and load menu.kv then add it to simplegame.kv
+Builder.load_file("menu.kv")
 
-# Create The Main Widget here change the Widget to RelativeLayout   
+# Create The Main Widget here change the Widget to RelativeLayout
 class MainWidget(RelativeLayout):
 	# Importing Functions ----->
 	from transforms import transform, transform_2D, transform_perspective
@@ -29,6 +31,12 @@ class MainWidget(RelativeLayout):
 	perspective_point_y = NumericProperty(0)
 
 	menu_widget =ObjectProperty()
+	menu_title = StringProperty("W E L C O M E !")
+	menu_btn_title = StringProperty("START")
+	score = StringProperty("")
+
+	image_path = StringProperty("images/1.png")
+
 
 	V_NB_LINES = 10       # Number of lines
 	V_LINES_SPACING = .4 # percentage in screen width
@@ -59,12 +67,21 @@ class MainWidget(RelativeLayout):
 
 	ship_coordinates = [(0, 0), (0, 0), (0, 0)]
 
-	state_game_over =  False
-	is_game_started = False  
+	state_game_over = False
+	is_game_started = False
 
+	sound_begin = None  
+	sound_gameover_impact = None  
+	sound_gameover_voice = None  
+	sound_modoo = None  
+	sound_music1= None  
+	sound_restart = None  
 	# call the __init__() constructor function
 	def __init__(self, **kwargs):
 		super(MainWidget, self).__init__(**kwargs)
+		# call init_sounds
+		self.init_sounds()   
+		self.sound_modoo.play()  
 		# Call init_vertical_lines() and init_horizontal_lines() functions to draw them in the constroctor
 		self.init_vertical_lines()
 		self.init_horizontal_lines()
@@ -76,6 +93,7 @@ class MainWidget(RelativeLayout):
 		# call reset_game() function
 		self.reset_game()
 
+
 		if self.is_desktop():
 			self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
 			self._keyboard.bind(on_key_down=self.on_keyboard_down)
@@ -84,6 +102,30 @@ class MainWidget(RelativeLayout):
 
 		# Call update function every 1.0 / 60.0 sec
 		Clock.schedule_interval(self.update, 1.0 / 60.0)
+
+
+	# Init Sounds
+	def init_sounds(self):
+		self.sound_begin = SoundLoader.load("audio/begin.mp3")  
+		self.sound_gameover_impact = SoundLoader.load("audio/gameover_impact.mp3") 
+		self.sound_gameover_voice = SoundLoader.load("audio/gameover_voice.mp3") 
+		self.sound_modoo = SoundLoader.load("audio/modoo.mp3") 
+		self.sound_music1 = SoundLoader.load("audio/6.mp3") 
+		self.sound_restart = SoundLoader.load("audio/restart.mp3") 
+
+		self.sound_music1.volume =1 
+		self.sound_begin.volume = .25 
+		self.sound_gameover_impact.volume = .6 
+		self.sound_gameover_voice.volume = .25 
+		self.sound_modoo.volume = .25 
+		self.sound_restart.volume = .25 
+
+		self.sound_music1.loop = True 
+
+
+	def play_gameover(self,dt):
+		self.sound_gameover_voice.play()
+
 
 	# Check ship collision
 	def check_ship_collision(self):
@@ -261,14 +303,14 @@ class MainWidget(RelativeLayout):
 		# Call Update Ship Function
 		self.update_ship()
 
-		if not self.state_game_over and self.is_game_started:        
+		if not self.state_game_over and self.is_game_started:
 			# going forward
 			speed_y = self.SPEED * self.height /100
 			self.current_offset_y += speed_y * time_factor
 
 			# Loop
 			spacing_y = self.H_LINES_SPACING * self.height
-			while self.current_offset_y >= spacing_y:      
+			while self.current_offset_y >= spacing_y:
 				self.current_offset_y -= spacing_y
 				self.current_y_loop +=1
 				self.generate_tiles_coordinates()
@@ -276,11 +318,17 @@ class MainWidget(RelativeLayout):
 			# Moving to the left or to the  right
 			speed_x = self.current_speed_x * self.width /100
 			self.current_offset_x += speed_x * time_factor
-
-		if not self.check_ship_collision() and not self.state_game_over :     
+			# Adding Score
+			self.score = "SCORE: " + str(self.current_y_loop)
+		if not self.check_ship_collision() and not self.state_game_over :
 			print("GAME OVER")
 			self.state_game_over = True
+			self.menu_title = "G A M E    O V E R"
+			self.menu_btn_title = "RESTART"
 			self.menu_widget.opacity = 1
+			self.sound_music1.stop()  
+			self.sound_gameover_impact.play()  
+			Clock.schedule_once(self.play_gameover, 2)  
 
 	# Operating system Checking !
 	def is_desktop(self):
@@ -308,13 +356,19 @@ class MainWidget(RelativeLayout):
 		x = self.get_line_x_by_index(ti_x)
 		y = self.get_line_y_by_index(ti_y)
 		return x,y
-		
+
 	# Start Game Function on press
 	def on_menu_button_pressed(self):
 		print('Clicked')
+		if self.state_game_over:    
+			self.sound_restart.play() 
+		else:    
+			self.sound_begin.play() 
+		self.sound_music1.play()
 		self.reset_game()
 		self.is_game_started = True
 		self.menu_widget.opacity = 0
+
 
 	def reset_game(self):
 		self.current_offset_y = 0
@@ -326,6 +380,8 @@ class MainWidget(RelativeLayout):
 		self.generate_tiles_coordinates()
 		self.state_game_over = False
 
+		r= random.randint(2,23)
+		self.image_path = "images/"+str(r)+".png"
 # Define app name
 class SimpleGameApp(App):
 	pass
