@@ -1,7 +1,13 @@
+#:import menu menu
+
 MainWidget:
 
 
 # Call MainWidget class and assigning 2 values into 2 variables
 <MainWidget>:
+    menu_widget: menu_widget
 	perspective_point_x: self.width/2
 	perspective_point_y: self.height*0.75
+	# Adding menu
+	MenuWidget:
+	    id:menu_widget
